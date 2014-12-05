@@ -34,6 +34,9 @@ class BaseModel(object):
                 *[getattr(self, key) for key in self._repr_fields]
         )[:-1])
 
+    def __str__(self):
+        return unicode(repr(self))
+
 class Anime(BaseModel):
 
     _repr_fields = ["name"]
@@ -43,6 +46,35 @@ class Anime(BaseModel):
         episodes = [Episode(self, ep)
                     for ep in self.raw_data["episode"]]
         return sorted(episodes)
+
+    def __getattr__(self, item):
+        try:
+            return super(Anime, self).__getattr__(item)
+        except AttributeError:
+            info = self.info(item)
+            if info:
+                return info[0]["value"] if info else None
+            raise
+
+    def info(self, type, lang=None):
+        data = []
+        for i in self.raw_data["info"]:
+            if type not in i["@type"].lower().replace(" ", "_"):
+                continue
+            if lang and i.get("@lang") and lang != i.get("@lang"):
+                continue
+            data.append({
+                "value": i["#text"],
+                "lang": i.get("@lang"),
+                "href": i.get("@href")
+            })
+        return data
+
+    def info_types(self):
+        return set([
+            i["@type"].lower().replace(" ", "_")
+            for i in self.raw_data["info"]
+        ])
 
     def fill(self):
         scrap_episodes(self.id)

@@ -1,9 +1,10 @@
-#from __future__ import absolute_import
+
 import requests
 import convert
 
 URL = "http://cdn.animenewsnetwork.com/encyclopedia/api.xml"
 
+__version__ = "0.1.0"
 
 def search(term):
     r = requests.get(URL, params={"title": "~{}".format(term)})
