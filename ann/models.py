@@ -40,6 +40,9 @@ class BaseModel(object):
 class Anime(BaseModel):
 
     _repr_fields = ["name"]
+    _converters = {
+        "id": int
+    }
 
     @property
     def episodes(self):
@@ -56,18 +59,31 @@ class Anime(BaseModel):
                 return info[0]["value"] if info else None
             raise
 
-    def info(self, type, lang=None):
+    @property
+    def image(self, size=1):
+        info = self.info("picture", tag="@src")
+        if info and info[0]["img"]:
+            try:
+               return info[0]["img"][size]["@src"]
+            except KeyError:
+                try:
+                    return info[0]["img"][0]["@src"]
+                except KeyError:
+                    return info[0]["img"]["@src"]
+        return None
+
+    def info(self, type, tag=None):
         data = []
         for i in self.raw_data["info"]:
-            if type not in i["@type"].lower().replace(" ", "_"):
+            if type.lower() not in i["@type"].lower().replace(" ", "_"):
                 continue
-            if lang and i.get("@lang") and lang != i.get("@lang"):
-                continue
-            data.append({
-                "value": i["#text"],
-                "lang": i.get("@lang"),
-                "href": i.get("@href")
-            })
+            _data = dict(**i)
+            if tag:
+                _data["value"] = i.get(tag)
+            else:
+                _data["value"] = _data.get("#text")
+            data.append(_data)
+
         return data
 
     def info_types(self):
